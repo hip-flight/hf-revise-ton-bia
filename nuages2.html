@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Aéronautique - Identification Nuages</title>
+    <style>
+        :root {
+            --af-blue: #00235e; /* Bleu Marine Air France */
+            --af-red: #ed1c24;  /* Rouge Accent Air France */
+            --af-white: #ffffff;
+            --af-grey: #f0f0f0;
+        }
+
+        body { 
+            font-family: 'Helvetica Neue', Arial, sans-serif; 
+            background: var(--af-grey); color: var(--af-blue); 
+            display: flex; flex-direction: column; align-items: center; padding: 20px; 
+        }
+
+        .container { 
+            background: var(--af-white); padding: 30px; border-radius: 2px; 
+            max-width: 700px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-top: 5px solid var(--af-red);
+        }
+
+        h1 { border-bottom: 2px solid var(--af-blue); padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .img-frame { 
+            width: 100%; height: 350px; background: #eee; margin-bottom: 20px; 
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+
+        .img-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        button { 
+            padding: 15px; border: 1px solid var(--af-blue); border-radius: 0; 
+            cursor: pointer; font-weight: bold; background: white; color: var(--af-blue); 
+            transition: 0.3s; text-transform: uppercase;
+        }
+
+        button:hover { background: var(--af-blue); color: white; }
+        
+        button.correct { background: #27ae60 !important; color: white; border-color: #27ae60; }
+        button.wrong { background: var(--af-red) !important; color: white; border-color: var(--af-red); }
+
+        #report { display: none; text-align: left; margin-top: 20px; }
+        .report-item { 
+            padding: 15px; border-bottom: 1px solid #ccc; margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+
+        .summary-header { font-size: 1.5rem; font-weight: bold; color: var(--af-red); margin-bottom: 20px; }
+
+        .btn-next { 
+            width: 100%; margin-top: 20px; background: var(--af-red); color: white; 
+            border: none; padding: 15px; display: none; font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Reconnaissance des Nuages</h1>
+
+    <div class="container" id="game-box">
+        <div id="progress" style="margin-bottom: 10px; font-weight: bold;"></div>
+        <div class="img-frame">
+            <img id="main-img" src="" alt="Image Nuage">
+        </div>
+        <div class="grid" id="choices"></div>
+        <button id="btn-next-step" class="btn-next" onclick="next()">Question Suivante</button>
+    </div>
+
+    <div class="container" id="report">
+        <div class="summary-header">Compte-rendu de mission</div>
+        <div id="report-content"></div>
+        <button onclick="location.reload()" style="width:100%; margin-top:20px; background: var(--af-blue); color:white;">Recommencer</button>
+    </div>
+
+    <script>
+        const clouds = [
+            { name: "Cirrus", url: "https://www.nae.fr/wp-content/uploads/2023/09/Cirus-homgenicus.png", info: "Étage supérieur. Formés de cristaux de glace. Ne donnent pas de précipitations." },
+            { name: "Cumulonimbus", url: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Cumulonimbo_con_pileus._Volando_a_11.000_metros_sobre_Brasil.jpg/800px-Cumulonimbo_con_pileus._Volando_a_11.000_metros_sobre_Brasil.jpg", info: "Grand développement vertical. Risque de grêle, foudre et turbulences sévères." },
+            { name: "Altocumulus", url: "https://static1.mclcm.net/iod/images/v2/69/photo/379688/658x370_80_300_000000x30x0.jpg?ts=20220318173834", info: "Étage moyen. Indique souvent une instabilité de l'air en altitude." },
+            { name: "Stratus", url: "https://cdn0.projetecolo.com/fr/posts/0/8/8/nuages_stratus_definition_et_formation_1880_orig.jpg", info: "Étage inférieur. Grisaille uniforme. Risque de plafond bas et mauvaise visibilité." },
+            { name: "Lenticulaire", url: "https://images.ladepeche.fr/api/v1/images/view/5ffed197d286c213f50b81ae/large/image.jpg?v=1", info: "Nuage d'onde (montagne). Très dangereux : indique de fortes turbulences invisibles." }
+        ];
+
+        let quizData = [...clouds].sort(() => Math.random() - 0.5); // Mélange aléatoire
+        let currentIndex = 0;
+        let userAnswers = [];
+
+        function loadQuestion() {
+            if (currentIndex >= quizData.length) {
+                showReport();
+                return;
+            }
+
+            const current = quizData[currentIndex];
+            document.getElementById('main-img').src = current.url;
+            document.getElementById('progress').innerText = `NUAGE ${currentIndex + 1} / ${quizData.length}`;
+            
+            const btnContainer = document.getElementById('choices');
+            btnContainer.innerHTML = "";
+            document.getElementById('btn-next-step').style.display = "none";
+
+            // Mélange des boutons
+            let choices = clouds.map(c => c.name).sort(() => Math.random() - 0.5);
+
+            choices.forEach(choice => {
+                const b = document.createElement('button');
+                b.innerText = choice;
+                b.onclick = () => {
+                    const allBtns = btnContainer.querySelectorAll('button');
+                    allBtns.forEach(btn => btn.disabled = true);
+                    
+                    userAnswers.push({
+                        question: current.name,
+                        selected: choice,
+                        correct: current.name,
+                        explanation: current.info,
+                        isCorrect: choice === current.name
+                    });
+
+                    if(choice === current.name) {
+                        b.classList.add('correct');
+                    } else {
+                        b.classList.add('wrong');
+                        allBtns.forEach(btn => { if(btn.innerText === current.name) btn.classList.add('correct'); });
+                    }
+                    document.getElementById('btn-next-step').style.display = "block";
+                };
+                btnContainer.appendChild(b);
+            });
+        }
+
+        function next() {
+            currentIndex++;
+            loadQuestion();
+        }
+
+        function showReport() {
+            document.getElementById('game-box').style.display = "none";
+            const report = document.getElementById('report');
+            const content = document.getElementById('report-content');
+            report.style.display = "block";
+
+            userAnswers.forEach((ans, i) => {
+                const item = document.createElement('div');
+                item.className = 'report-item';
+                item.innerHTML = `
+                    <strong>Question ${i+1} : ${ans.question}</strong><br>
+                    <span style="color: ${ans.isCorrect ? 'green' : 'red'}">
+                        Votre réponse : ${ans.selected} ${ans.isCorrect ? '(Vrai)' : '(Faux)'}
+                    </span><br>
+                    <strong>Réponse attendue :</strong> ${ans.correct}<br>
+                    <p style="margin-top:10px; font-size:0.9em; border-left: 3px solid var(--af-red); padding-left:10px;">
+                        <em>Explication :</em> ${ans.explanation}
+                    </p>
+                `;
+                content.appendChild(item);
+            });
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
