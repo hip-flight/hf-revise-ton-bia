@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Flight Briefing - Lecture des Vents</title>
+    <style>
+        :root {
+            --af-blue: #00235e;
+            --af-red: #ed1c24;
+            --af-white: #ffffff;
+            --af-grey: #f4f7f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: var(--af-grey); color: var(--af-blue);
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .dashboard {
+            background: var(--af-white); max-width: 800px; width: 100%;
+            border-top: 6px solid var(--af-red); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px; position: relative;
+        }
+
+        .lesson-box {
+            background: #eef2f7; padding: 20px; border-radius: 4px;
+            margin-bottom: 25px; border-left: 5px solid var(--af-blue);
+        }
+
+        .wind-preview {
+            display: flex; justify-content: center; align-items: center;
+            height: 180px; background: #1a2a44; margin: 15px 0; border-radius: 4px;
+        }
+
+        .barbule-svg { width: 120px; height: 120px; stroke: white; stroke-width: 3; fill: white; }
+
+        .quiz-container { display: none; background: var(--af-white); border: 2px solid var(--af-blue); padding: 20px; }
+
+        .btn-main {
+            background: var(--af-blue); color: white; border: none;
+            padding: 15px 25px; cursor: pointer; font-weight: bold; width: 100%;
+            text-transform: uppercase; margin-top: 10px; font-size: 1rem;
+        }
+
+        .btn-choice {
+            display: block; width: 100%; padding: 12px; margin: 8px 0;
+            border: 1px solid var(--af-blue); background: white; cursor: pointer;
+            text-align: left; transition: 0.2s; font-weight: 500;
+        }
+
+        .btn-choice:hover { background: #f0f0f0; border-left: 5px solid var(--af-red); }
+        .correct { background: #27ae60 !important; color: white; border-color: #27ae60; }
+        .wrong { background: var(--af-red) !important; color: white; border-color: var(--af-red); }
+
+        .status-indicator { font-size: 0.8rem; text-transform: uppercase; color: var(--af-red); font-weight: bold; margin-bottom: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <span class="status-indicator">Formation Technique BIA // Météorologie</span>
+        <h1 style="margin-top:0;">Lecture des Vents (Barbules)</h1>
+        
+        <div id="learning-section">
+            <div class="lesson-box" id="lesson-text">
+                <strong>RÈGLE N°1 : L'orientation.</strong><br>
+                La hampe indique la direction d'où vient le vent. Les barbules (les traits) sont toujours situées à l'arrière, du côté des hautes pressions.
+            </div>
+
+            <div class="wind-preview" id="visual-zone">
+                <svg class="barbule-svg" viewBox="0 0 100 100">
+                    <line x1="50" y1="80" x2="50" y2="20" />
+                    <line x1="50" y1="20" x2="70" y2="10" />
+                </svg>
+            </div>
+
+            <button class="btn-main" onclick="startQuiz()">Lancer l'évaluation intermédiaire</button>
+        </div>
+
+        <div id="quiz-section" class="quiz-container">
+            <h3 id="question-title">Analyse du vecteur vent...</h3>
+            <div id="choices-grid"></div>
+        </div>
+    </div>
+
+<script>
+    const lessons = [
+        {
+            txt: "<strong>RÈGLE N°1 : L'orientation.</strong><br>La pointe vide de la hampe indique vers où le vent souffle. Si les traits sont en haut, c'est un vent du NORD.",
+            svg: '<line x1="50" y1="80" x2="50" y2="20" /><line x1="50" y1="20" x2="70" y2="10" />',
+            questions: [
+                { q: "Sur une carte, la hampe est horizontale, pointant vers la droite. Les barbules sont à gauche. Quel est ce vent ?", c: ["Vent d'Ouest", "Vent d'Est", "Vent du Sud"], a: 0 },
+                { q: "Un avion décolle face au vent. Si la hampe pointe vers le Sud, quelle piste doit-il utiliser ?", c: ["La piste Nord (Face au Nord)", "La piste Sud (Face au Sud)", "Peu importe"], a: 1 }
+            ]
+        },
+        {
+            txt: "<strong>RÈGLE N°2 : Intensité (Traits).</strong><br>Un grand trait = 10 nœuds. Un petit trait = 5 nœuds. On les additionne simplement.",
+            svg: '<line x1="50" y1="80" x2="50" y2="20" /><line x1="50" y1="20" x2="75" y2="10" /><line x1="50" y1="35" x2="75" y2="25" /><line x1="50" y1="50" x2="65" y2="45" />',
+            questions: [
+                { q: "Vous lisez 3 grands traits sur une hampe. Quelle est la vitesse du vent ?", c: ["15 nœuds", "30 nœuds", "45 nœuds"], a: 1 },
+                { q: "Comment représente-t-on un vent de 15 nœuds ?", c: ["3 petits traits", "1 grand trait et 1 petit trait", "1 fanion"], a: 1 }
+            ]
+        },
+        {
+            txt: "<strong>RÈGLE N°3 : Intensité (Fanion).</strong><br>Le triangle (fanion) représente 50 nœuds. Il est utilisé pour les vents forts, souvent en altitude.",
+            svg: '<line x1="50" y1="80" x2="50" y2="20" /><polygon points="50,20 80,10 50,35" />',
+            questions: [
+                { q: "Une hampe comporte un fanion et un petit trait. Vitesse ?", c: ["55 nœuds", "15 nœuds", "60 nœuds"], a: 0 },
+                { q: "À quelle vitesse correspond un fanion seul ?", c: ["100 nœuds", "25 nœuds", "50 nœuds"], a: 2 }
+            ]
+        }
+    ];
+
+    let currentLesson = 0;
+    let currentQuizIdx = 0;
+
+    function startQuiz() {
+        document.getElementById('learning-section').style.display = 'none';
+        document.getElementById('quiz-section').style.display = 'block';
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const lesson = lessons[currentLesson];
+        const q = lesson.questions[currentQuizIdx];
+        document.getElementById('question-title').innerText = q.q;
+        const grid = document.getElementById('choices-grid');
+        grid.innerHTML = '';
+
+        q.c.forEach((choice, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-choice';
+            btn.innerText = choice;
+            btn.onclick = () => check(idx, q.a, btn);
+            grid.appendChild(btn);
+        });
+    }
+
+    function check(idx, correct, btn) {
+        const btns = document.querySelectorAll('.btn-choice');
+        btns.forEach(b => b.disabled = true);
+
+        if (idx === correct) {
+            btn.classList.add('correct');
+            setTimeout(() => {
+                currentQuizIdx++;
+                if (currentQuizIdx < lessons[currentLesson].questions.length) {
+                    showQuestion();
+                } else {
+                    nextLesson();
+                }
+            }, 1000);
+        } else {
+            btn.classList.add('wrong');
+            btns[correct].classList.add('correct');
+            setTimeout(() => {
+                currentQuizIdx++;
+                if (currentQuizIdx < lessons[currentLesson].questions.length) {
+                    showQuestion();
+                } else {
+                    nextLesson();
+                }
+            }, 2000);
+        }
+    }
+
+    function nextLesson() {
+        currentLesson++;
+        currentQuizIdx = 0;
+        if (currentLesson < lessons.length) {
+            document.getElementById('learning-section').style.display = 'block';
+            document.getElementById('quiz-section').style.display = 'none';
+            document.getElementById('lesson-text').innerHTML = lessons[currentLesson].txt;
+            document.querySelector('.barbule-svg').innerHTML = lessons[currentLesson].svg;
+        } else {
+            document.getElementById('learning-section').innerHTML = `
+                <div style="text-align:center; padding: 20px;">
+                    <h2 style="color:var(--af-red)">FORMATION TERMINÉE</h2>
+                    <p>Vous avez validé les 3 modules de lecture des barbules de vent.</p>
+                    <button class="btn-main" onclick="location.reload()">Recommencer la session</button>
+                </div>`;
+            document.getElementById('quiz-section').style.display = 'none';
+            document.getElementById('learning-section').style.display = 'block';
+        }
+    }
+</script>
+</body>
+</html>
