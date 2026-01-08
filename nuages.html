@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu des Nuages - Météorologie</title>
+    <style>
+        :root {
+            --primary: #2980b9;
+            --bg: #ecf0f1;
+            --white: #ffffff;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        h1 { color: var(--primary); }
+        .instruction { margin-bottom: 20px; font-style: italic; }
+        
+        .game-container { display: flex; gap: 40px; max-width: 900px; width: 100%; justify-content: center; }
+        
+        /* Zone des noms (Draggable) */
+        .cloud-names { display: flex; flex-direction: column; gap: 10px; }
+        .cloud-card {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: grab;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Zone des cibles (Drop) */
+        .drop-zones { display: flex; flex-direction: column; gap: 15px; flex-grow: 1; }
+        .drop-zone {
+            background-color: var(--white);
+            border: 2px dashed #bdc3c7;
+            padding: 20px;
+            border-radius: 10px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        .drop-zone.hover { border-color: var(--primary); background-color: #d6eaf8; }
+        .drop-zone.correct { border-color: #27ae60; background-color: #d5f5e3; border-style: solid; }
+
+        .description { margin-left: 15px; font-size: 0.95rem; color: #34495e; }
+
+        #result { margin-top: 30px; font-weight: bold; font-size: 1.2rem; }
+        button { margin-top: 20px; padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>Identifier les Nuages</h1>
+    <p class="instruction">Faites glisser le nom du nuage vers sa définition correspondante.</p>
+
+    <div class="game-container">
+        <div class="cloud-names" id="names-container">
+            <div class="cloud-card" draggable="true" id="cumulonimbus">Cumulonimbus</div>
+            <div class="cloud-card" draggable="true" id="cirrus">Cirrus</div>
+            <div class="cloud-card" draggable="true" id="altocumulus">Altocumulus</div>
+            <div class="cloud-card" draggable="true" id="stratus">Stratus</div>
+        </div>
+
+        <div class="drop-zones">
+            <div class="drop-zone" data-target="cirrus">
+                <span class="description">Filaments blancs, haute altitude (> 6000m), composés de cristaux de glace.</span>
+            </div>
+            <div class="drop-zone" data-target="cumulonimbus">
+                <span class="description">Nuage d'orage à grand développement vertical, en forme d'enclume.</span>
+            </div>
+            <div class="drop-zone" data-target="altocumulus">
+                <span class="description">Bancs de nuages blancs/gris à l'étage moyen (2000-6000m), aspect de "galets".</span>
+            </div>
+            <div class="drop-zone" data-target="stratus">
+                <span class="description">Nappe grise uniforme, basse altitude, peut toucher le sol (brouillard).</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="result"></div>
+    <button onclick="location.reload()">Recommencer</button>
+
+    <script>
+        const cards = document.querySelectorAll('.cloud-card');
+        const zones = document.querySelectorAll('.drop-zone');
+        let score = 0;
+
+        cards.forEach(card => {
+            card.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text', e.target.id);
+            });
+        });
+
+        zones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('hover');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('hover');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('hover');
+                const cloudId = e.dataTransfer.getData('text');
+                const targetId = zone.getAttribute('data-target');
+
+                if (cloudId === targetId && !zone.classList.contains('correct')) {
+                    const originalCard = document.getElementById(cloudId);
+                    zone.classList.add('correct');
+                    zone.innerHTML = `<b>${originalCard.innerText}</b> : ` + zone.innerHTML;
+                    originalCard.style.visibility = 'hidden';
+                    score++;
+                    checkWin();
+                }
+            });
+        });
+
+        function checkWin() {
+            if (score === cards.length) {
+                document.getElementById('result').innerText = "Bravo ! Vous avez identifié tous les nuages !";
+                document.getElementById('result').style.color = "#27ae60";
+            }
+        }
+    </script>
+</body>
+</html>
