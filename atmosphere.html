@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>BIA - Challenge Atmosphère</title>
+    <style>
+        :root {
+            --af-blue: #00235e;
+            --af-red: #ed1c24;
+            --af-white: #ffffff;
+            --af-grey: #f4f7f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--af-grey); color: var(--af-blue);
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .dashboard {
+            background: var(--af-white); max-width: 1000px; width: 100%;
+            border-top: 6px solid var(--af-red); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 20px; display: grid; grid-template-columns: 220px 1fr 220px; gap: 15px;
+        }
+
+        /* Objets à glisser */
+        .drag-source { display: flex; flex-direction: column; gap: 8px; }
+        .drag-item {
+            padding: 12px; background: var(--af-blue); color: white;
+            cursor: grab; font-size: 0.85rem; text-align: center; font-weight: bold;
+            border-radius: 2px; user-select: none; border-bottom: 3px solid rgba(0,0,0,0.2);
+        }
+        .drag-item:active { cursor: grabbing; transform: scale(0.95); }
+
+        /* L'Atmosphère */
+        .atm-container {
+            position: relative; height: 650px;
+            background: linear-gradient(to top, #add8e6 0%, #4682b4 20%, #1a2a44 50%, #050a15 100%);
+            border: 3px solid var(--af-blue); display: flex; flex-direction: column;
+        }
+
+        .layer-zone {
+            flex: 1; border-bottom: 1px dashed rgba(255,255,255,0.3);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; transition: 0.3s;
+        }
+
+        .drop-target {
+            width: 90%; min-height: 45px; border: 2px dashed rgba(255,255,255,0.4);
+            margin: 5px; display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; padding: 5px;
+        }
+
+        .km-tag { position: absolute; left: 5px; top: 5px; color: white; font-size: 0.7rem; font-weight: bold; opacity: 0.7; }
+
+        /* Composition */
+        .comp-panel { border: 2px solid var(--af-blue); padding: 10px; background: #fff; }
+        .gas-target {
+            height: 70px; border: 2px solid #ddd; margin-bottom: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 0.75rem; text-align: center;
+        }
+
+        #log {
+            grid-column: 1 / span 3; padding: 15px; background: var(--af-blue);
+            color: white; border-left: 5px solid var(--af-red); margin-top: 10px; font-size: 0.9rem;
+        }
+
+        .success-bg { background: rgba(39, 174, 96, 0.2) !important; }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-transform: uppercase; letter-spacing: 2px;">Briefing : Structure Atmosphérique</h1>
+
+    <div class="dashboard">
+        <div class="drag-source">
+            <p style="font-size:0.7rem; font-weight:bold;">COUCHES (À IDENTIFIER)</p>
+            <div class="drag-item" draggable="true" id="layer-thermo">Thermosphère</div>
+            <div class="drag-item" draggable="true" id="layer-meso">Mésosphère</div>
+            <div class="drag-item" draggable="true" id="layer-strato">Stratosphère</div>
+            <div class="drag-item" draggable="true" id="layer-tropo">Troposphère</div>
+            
+            <p style="font-size:0.7rem; font-weight:bold; margin-top:15px;">OBJETS & MASSE</p>
+            <div class="drag-item" draggable="true" id="obj-avion">✈️ TRAFIC AÉRIEN</div>
+            <div class="drag-item" draggable="true" id="obj-sat">🛰️ TÉLÉCOMMUNICATIONS</div>
+            <div class="drag-item" draggable="true" id="obj-air">💨 90% MASSE DE L'AIR</div>
+        </div>
+
+        <div class="atm-container">
+            <div class="layer-zone" id="zone-thermo" data-layer="layer-thermo">
+                <span class="km-tag">80km - 500km</span>
+                <div class="drop-target" data-accept="layer-thermo,obj-sat"></div>
+            </div>
+            <div class="layer-zone" id="zone-meso" data-layer="layer-meso">
+                <span class="km-tag">50km - 80km</span>
+                <div class="drop-target" data-accept="layer-meso"></div>
+            </div>
+            <div class="layer-zone" id="zone-strato" data-layer="layer-strato">
+                <span class="km-tag">12km - 50km</span>
+                <div class="drop-target" data-accept="layer-strato"></div>
+            </div>
+            <div class="layer-zone" id="zone-tropo" data-layer="layer-tropo">
+                <span class="km-tag">0km - 12km (SOL)</span>
+                <div class="drop-target" data-accept="layer-tropo,obj-avion,obj-air"></div>
+            </div>
+        </div>
+
+        <div class="drag-source">
+             <p style="font-size:0.7rem; font-weight:bold;">COMPOSITION GAZ</p>
+             <div class="drag-item" draggable="true" id="gas-78">78 %</div>
+             <div class="drag-item" draggable="true" id="gas-21">21 %</div>
+             <div class="drag-item" draggable="true" id="gas-1">1 %</div>
+             
+             <div class="comp-panel" style="margin-top:20px;">
+                <div class="gas-target drop-target" data-accept="gas-78">AZOTE (N2)</div>
+                <div class="gas-target drop-target" data-accept="gas-21">OXYGÈNE (O2)</div>
+                <div class="gas-target drop-target" data-accept="gas-1">GAZ RARES</div>
+             </div>
+        </div>
+
+        <div id="log"><strong>LOG :</strong> Prêt pour le déploiement. Identifiez les couches et placez les éléments.</div>
+    </div>
+
+    <script>
+        const dragItems = document.querySelectorAll('.drag-item');
+        const dropTargets = document.querySelectorAll('.drop-target');
+        const log = document.getElementById('log');
+
+        dragItems.forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text', e.target.id);
+            });
+        });
+
+        dropTargets.forEach(target => {
+            target.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                target.style.background = "rgba(237, 28, 36, 0.3)";
+            });
+
+            target.addEventListener('dragleave', () => {
+                target.style.background = "transparent";
+            });
+
+            target.addEventListener('drop', (e) => {
+                e.preventDefault();
+                target.style.background = "transparent";
+                const id = e.dataTransfer.setData ? e.dataTransfer.getData('text') : e.dataTransfer.getData('text/plain');
+                const element = document.getElementById(id);
+                const accepted = target.getAttribute('data-accept').split(',');
+
+                if (accepted.includes(id)) {
+                    target.appendChild(element);
+                    element.style.background = "#27ae60";
+                    element.style.cursor = "default";
+                    element.setAttribute('draggable', 'false');
+                    
+                    // Si c'est une couche, on affiche son vrai nom
+                    if(id.startsWith('layer-')) revealName(id, element);
+                    
+                    log.innerHTML = `<strong>SUCCÈS :</strong> Élément stabilisé avec succès.`;
+                } else {
+                    log.innerHTML = `<strong>ALERTE :</strong> Paramètres incorrects. Position impossible pour cet élément.`;
+                }
+            });
+        });
+
+        function revealName(id, el) {
+            const names = {
+                'layer-tropo': 'TROPOSPHÈRE ✅',
+                'layer-strato': 'STRATOSPHÈRE ✅',
+                'layer-meso': 'MÉSOSPHÈRE ✅',
+                'layer-thermo': 'THERMOSPHÈRE ✅'
+            };
+            el.innerText = names[id];
+        }
+    </script>
+</body>
+</html>
