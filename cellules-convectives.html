@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Flight Simulator - Convection BIA</title>
+    <style>
+        :root {
+            --af-blue: #00235e;
+            --af-red: #ed1c24;
+            --af-white: #ffffff;
+            --af-grey: #e6e6e6;
+            --sky-top: #1a5276;
+            --sky-bottom: #a9cce3;
+        }
+
+        body {
+            font-family: 'Segoe UI', Helvetica, sans-serif;
+            background: var(--af-grey);
+            color: var(--af-blue);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .dashboard {
+            background: var(--af-white);
+            max-width: 900px; width: 100%;
+            border-top: 6px solid var(--af-red);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 { text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+
+        /* Zone Simulation */
+        #sky {
+            position: relative;
+            width: 100%; height: 450px;
+            background: linear-gradient(to top, var(--sky-bottom), var(--sky-top));
+            overflow: hidden; border-radius: 4px;
+            border: 3px solid var(--af-blue);
+        }
+
+        .ground {
+            position: absolute; bottom: 0; width: 100%; height: 40px;
+            background: #5d4037; border-top: 4px solid #3e2723;
+        }
+
+        #sun {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 120px; height: 20px;
+            background: radial-gradient(ellipse, #ffeb3b, rgba(255,235,59,0));
+            filter: blur(5px); animation: heat-throb 2s infinite;
+        }
+
+        @keyframes heat-throb { 0% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        #particle {
+            position: absolute; bottom: 45px; left: 50%;
+            width: 30px; height: 30px; border-radius: 50%;
+            background: var(--af-red); transform: translateX(-50%);
+            display: none; transition: background 1s, filter 0.5s;
+            box-shadow: 0 0 15px rgba(237, 28, 36, 0.5);
+            z-index: 10;
+        }
+
+        /* Interface Questions */
+        #quiz-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,35,94,0.85);
+            display: none; flex-direction: column; justify-content: center;
+            align-items: center; color: white; padding: 20px; box-sizing: border-box;
+            z-index: 100;
+        }
+
+        .btn-choice {
+            background: white; color: var(--af-blue);
+            border: none; padding: 12px 25px; margin: 10px;
+            font-weight: bold; cursor: pointer; width: 250px;
+            text-transform: uppercase;
+        }
+
+        .btn-choice:hover { background: var(--af-red); color: white; }
+
+        #status-bar {
+            background: var(--af-blue); color: white;
+            padding: 15px; margin-top: 20px; font-size: 1.1em;
+            border-left: 5px solid var(--af-red); text-align: left;
+        }
+
+        .cloud {
+            position: absolute; width: 100px; height: 40px;
+            background: white; border-radius: 50px; opacity: 0;
+            filter: blur(5px); transition: opacity 2s;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <h1>Analyse Convective - Phase Alpha</h1>
+        
+        <div id="sky">
+            <div id="sun"></div>
+            <div class="ground"></div>
+            <div id="particle"></div>
+            <div id="cloud-visual" class="cloud" style="top: 80px; left: 45%;"></div>
+            
+            <div id="quiz-overlay">
+                <h2 id="question-text">Question de vol</h2>
+                <div id="quiz-choices"></div>
+            </div>
+        </div>
+
+        <div id="status-bar">Système prêt. Initialisation de la chauffe du sol...</div>
+    </div>
+
+<script>
+    const particle = document.getElementById('particle');
+    const status = document.getElementById('status-bar');
+    const overlay = document.getElementById('quiz-overlay');
+    const cloud = document.getElementById('cloud-visual');
+    
+    let state = { y: 0, x: 0, temp: 'hot' };
+
+    async function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function updatePos(x, y) {
+        particle.style.transform = `translate(calc(-50% + ${x}px), ${-y}px)`;
+    }
+
+    function askQuestion(q, choices, correctIdx) {
+        return new Promise((resolve) => {
+            overlay.style.display = 'flex';
+            document.getElementById('question-text').innerText = q;
+            const container = document.getElementById('quiz-choices');
+            container.innerHTML = '';
+            
+            choices.forEach((c, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-choice';
+                btn.innerText = c;
+                btn.onclick = () => {
+                    if (idx === correctIdx) {
+                        overlay.style.display = 'none';
+                        resolve(true);
+                    } else {
+                        triggerErrorMode(idx);
+                        // On ne résout pas, on force l'erreur visuelle
+                    }
+                };
+                container.appendChild(btn);
+            });
+        });
+    }
+
+    async function triggerErrorMode(choiceIdx) {
+        // Simulation de l'erreur
+        status.innerHTML = "<span style='color:var(--af-red)'>ERREUR DE RAISONNEMENT : Simulation de la physique incorrecte...</span>";
+        overlay.style.display = 'none';
+        
+        if (state.y < 100) { // Si on a dit que l'air froid montait
+            particle.style.background = "#2980b9";
+            await wait(500);
+            status.innerText = "L'air froid est plus dense : il s'écrase au sol. L'ascendance est impossible.";
+            particle.animate([{ transform: `translate(-50%, -50px)` }, { transform: `translate(-50%, 0px)` }], { duration: 1000, fill: 'forwards' });
+        } else {
+            status.innerText = "Sans condensation, aucun nuage ne peut se former malgré l'altitude.";
+            particle.style.opacity = "0.3";
+        }
+        
+        await wait(3000);
+        location.reload(); // On recommence pour apprendre
+    }
+
+    async function startSimulation() {
+        await wait(2000);
+        particle.style.display = 'block';
+        status.innerText = "L'air au contact du sol se réchauffe par conduction...";
+        
+        await wait(1500);
+        const q1 = await askQuestion(
+            "L'air chaud vient d'être chauffé au sol. Que fait sa masse volumique (densité) ?",
+            ["Elle augmente (plus lourd)", "Elle diminue (plus léger)"],
+            1
+        );
+
+        // Phase 1 : Ascendance
+        status.innerText = "ASCENDANCE : L'air chaud, moins dense, s'élève verticalement.";
+        for(let i=0; i<=250; i+=2) {
+            updatePos(0, i);
+            state.y = i;
+            await wait(20);
+        }
+
+        // Phase 2 : Refroidissement
+        status.innerText = "DÉTENTE ADIABATIQUE : La pression baisse, la température chute.";
+        particle.style.background = "#5dade2"; // Devient bleu
+        await wait(1000);
+
+        const q2 = await askQuestion(
+            "L'air se refroidit en montant. Arrivé au point de rosée, que se passe-t-il ?",
+            ["La vapeur d'eau se condense", "L'air devient totalement sec"],
+            0
+        );
+
+        // Phase 3 : Nuage
+        status.innerText = "CONDENSATION : Formation du cumulus.";
+        cloud.style.opacity = "1";
+        await wait(1500);
+
+        // Phase 4 : Subsidence
+        status.innerText = "SUB SIDENCE : L'air froid s'étale et redescend sur les côtés.";
+        for(let i=0; i<=150; i+=2) {
+            updatePos(i, 250 - (i/3));
+            await wait(20);
+        }
+        for(let i=0; i<=220; i+=3) {
+            updatePos(150, 200 - i);
+            await wait(20);
+        }
+
+        status.innerHTML = "<b>CYCLE TERMINÉ.</b> L'air froid retourne vers la source de chaleur. C'est une cellule convective stable.";
+    }
+
+    startSimulation();
+</script>
+
+</body>
+</html>
