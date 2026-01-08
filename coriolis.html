@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Coriolis 3D Masterclass - BIA</title>
+    <style>
+        :root {
+            --af-blue: #00235e;
+            --af-red: #ed1c24;
+            --af-white: #ffffff;
+            --af-grey: #f4f7f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--af-grey); color: var(--af-blue);
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .dashboard {
+            background: var(--af-white); max-width: 900px; width: 100%;
+            border-top: 8px solid var(--af-red); box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            padding: 40px; border-radius: 4px;
+        }
+
+        /* Vue 3D */
+        .viewport-3d {
+            perspective: 1000px;
+            width: 100%; height: 400px;
+            background: #050a15; border-radius: 8px;
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .sphere-container {
+            position: relative; width: 300px; height: 300px;
+            transform-style: preserve-3d;
+            transition: transform 1s ease-in-out;
+        }
+
+        #earth-model {
+            position: absolute; width: 100%; height: 100%;
+            border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
+            background: radial-gradient(circle at 30% 30%, #1e3a8a, #000);
+            transform-style: preserve-3d;
+        }
+
+        .equator {
+            position: absolute; top: 50%; width: 100%; height: 2px;
+            background: rgba(255,255,255,0.5); transform: rotateX(90deg);
+        }
+
+        #particle {
+            position: absolute; width: 14px; height: 14px;
+            background: var(--af-red); border-radius: 50%;
+            top: 10%; left: 50%; transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--af-red); z-index: 100;
+            display: none;
+        }
+
+        .ghost-path {
+            position: absolute; width: 2px; height: 0;
+            background: rgba(255,255,255,0.2); left: 50%; top: 10%;
+            transform: translateX(-50%); transition: height 2s linear;
+        }
+
+        /* Interface */
+        .info-panel {
+            margin-top: 25px; padding: 20px;
+            background: var(--af-blue); color: white;
+            border-left: 6px solid var(--af-red); min-height: 120px;
+        }
+
+        .controls { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
+        
+        button {
+            padding: 12px 20px; border: none; font-weight: bold;
+            text-transform: uppercase; cursor: pointer; transition: 0.2s;
+        }
+
+        .btn-next { background: var(--af-red); color: white; }
+        .btn-next:disabled { background: #ccc; }
+
+        .analogy {
+            margin-top: 15px; font-style: italic; font-size: 0.9em;
+            color: #555; display: flex; align-items: center; gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <h1 style="text-align:center; margin-top:0;">SYSTÈME CORIOLIS 3.0</h1>
+    
+    <div class="viewport-3d">
+        <div class="sphere-container" id="world">
+            <div id="earth-model">
+                <div class="equator"></div>
+            </div>
+            <div id="particle"></div>
+            <div id="path" class="ghost-path"></div>
+        </div>
+    </div>
+
+    <div class="info-panel" id="text-display">
+        <strong>INITIALISATION :</strong> Bienvenue Major. Pour comprendre Coriolis, il faut d'abord regarder la Terre depuis l'espace. Appuyez sur "ÉTAPE SUIVANTE".
+    </div>
+
+    <div class="analogy" id="analogy-display">
+        ℹ️ Concept : La Terre est un disque qui tourne à des vitesses différentes.
+    </div>
+
+    <div class="controls">
+        <button class="btn-next" id="nextBtn" onclick="runStep()">Étape Suivante ➔</button>
+    </div>
+</div>
+
+<script>
+    let step = 0;
+    const world = document.getElementById('world');
+    const particle = document.getElementById('particle');
+    const path = document.getElementById('path');
+    const text = document.getElementById('text-display');
+    const analogy = document.getElementById('analogy-display');
+    const btn = document.getElementById('nextBtn');
+
+    const content = [
+        {
+            txt: "<strong>ÉTAPE 1 : La différence de vitesse.</strong><br>Au Pôle, la Terre tourne sur elle-même (vitesse quasi nulle). À l'Équateur, elle tourne à 1600 km/h ! Tout objet qui descend du Pôle vers l'Équateur 'traîne' derrière cette vitesse.",
+            ana: "💡 Imaginez sauter d'un train lent sur un train qui roule à 300 km/h."
+        },
+        {
+            txt: "<strong>ÉTAPE 2 : Le lancement.</strong><br>Visualisons une masse d'air (en rouge) quittant le Pôle Nord. Elle vise le Sud en ligne droite parfaite.",
+            ana: "🎯 Objectif : L'équateur (ligne blanche)."
+        },
+        {
+            txt: "<strong>ÉTAPE 3 : L'illusion d'optique.</strong><br>La Terre tourne (vers la droite). La masse d'air avance, mais le sol en dessous se dérobe vers la gauche ! Nous, observateurs au sol, voyons la particule dévier.",
+            ana: "🎡 C'est comme lancer une balle sur un manège : la balle va droit, mais le manège tourne."
+        },
+        {
+            txt: "<strong>ÉTAPE 4 : La déviation à DROITE.</strong><br>Regardez bien : la particule courbe sa trajectoire vers la DROITE de son mouvement initial. C'est la loi absolue dans l'hémisphère Nord.",
+            ana: "✈️ Indispensable pour calculer la dérive en navigation aérienne."
+        },
+        {
+            txt: "<strong>ÉTAPE 5 : L'effet sur le vent.</strong><br>Coriolis est plus forte si le vent est rapide. Elle ne crée pas le vent, elle le dévie seulement.",
+            ana: "🌪️ C'est elle qui donne leur forme de spirale aux ouragans."
+        },
+        {
+            txt: "<strong>ÉTAPE 6 : Résumé BIA.</strong><br>1. Force nulle à l'équateur, max aux pôles.<br>2. Déviation à DROITE au Nord, GAUCHE au Sud.<br>3. Elle équilibre la force de pression pour créer le vent géostrophique.",
+            ana: "✅ Prêt pour l'examen !"
+        }
+    ];
+
+    async function runStep() {
+        step++;
+        btn.disabled = true;
+
+        if(step === 1) {
+            world.style.transform = "rotateX(20deg) rotateY(-20deg)";
+            text.innerHTML = content[0].txt; analogy.innerText = content[0].ana;
+        }
+        
+        if(step === 2) {
+            particle.style.display = "block";
+            text.innerHTML = content[1].txt; analogy.innerText = content[1].ana;
+        }
+
+        if(step === 3) {
+            world.style.animation = "rotateW 4s linear infinite";
+            text.innerHTML = content[2].txt; analogy.innerText = content[2].ana;
+            // Inject dynamic CSS for rotation
+            const style = document.createElement('style');
+            style.innerHTML = "@keyframes rotateW { from {transform: rotateX(20deg) rotateY(0deg);} to {transform: rotateX(20deg) rotateY(360deg);} }";
+            document.head.appendChild(style);
+        }
+
+        if(step === 4) {
+            text.innerHTML = content[3].txt; analogy.innerText = content[3].ana;
+            particle.animate([
+                { top: '10%', left: '50%' },
+                { top: '50%', left: '70%' }
+            ], { duration: 2000, fill: 'forwards' });
+        }
+
+        if(step === 5) {
+            text.innerHTML = content[4].txt; analogy.innerText = content[4].ana;
+        }
+
+        if(step === 6) {
+            text.innerHTML = content[5].txt; analogy.innerText = content[5].ana;
+            btn.innerText = "FIN DU BRIEFING";
+        }
+
+        setTimeout(() => { if(step < 6) btn.disabled = false; }, 1000);
+    }
+</script>
+</body>
+</html>
