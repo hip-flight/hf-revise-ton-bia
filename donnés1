@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculateur de Bord - BIA</title>
+    <style>
+        :root {
+            --af-blue: #00235e;
+            --af-red: #ed1c24;
+            --af-white: #ffffff;
+            --af-grey: #f4f7f9;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: var(--af-grey); color: var(--af-blue);
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+        }
+
+        .main-container {
+            background: var(--af-white); max-width: 900px; width: 100%;
+            border-top: 6px solid var(--af-red); box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: grid; grid-template-columns: 1fr 300px; gap: 20px; padding: 20px;
+        }
+
+        .quiz-section { padding: 20px; }
+        
+        .scratchpad-section {
+            border-left: 2px solid #ddd; padding: 10px;
+            display: flex; flex-direction: column;
+        }
+
+        h2 { text-transform: uppercase; font-size: 1.2rem; border-bottom: 2px solid var(--af-blue); padding-bottom: 5px; }
+
+        /* Style QCM */
+        .question-card {
+            background: #f9f9f9; padding: 20px; border-radius: 4px; margin-bottom: 20px;
+            border-left: 5px solid var(--af-blue);
+        }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+
+        .btn-opt {
+            padding: 10px; border: 1px solid var(--af-blue); background: white;
+            cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+
+        .btn-opt:hover { background: #eef2f7; }
+        .btn-opt.correct { background: #27ae60 !important; color: white; }
+        .btn-opt.wrong { background: var(--af-red) !important; color: white; }
+
+        /* Brouillon Numérique */
+        #canvas-scratch {
+            background: #fff9c4; border: 1px solid #d4d4d4;
+            cursor: crosshair; touch-action: none;
+        }
+
+        .scratch-tools { font-size: 0.8rem; margin-top: 5px; color: #666; font-style: italic; }
+
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 40px; }
+        
+        .next-btn {
+            width: 100%; padding: 15px; background: var(--af-blue); color: white;
+            border: none; cursor: pointer; display: none; text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="color: var(--af-blue); letter-spacing: 2px;">UNIT CONVERSION PILOT TRAINING</h1>
+
+    <div class="main-container">
+        <div class="quiz-section">
+            <div id="quiz-engine">
+                <div class="question-card">
+                    <div id="q-text" style="font-size: 1.1rem; font-weight: bold;">Chargement...</div>
+                    <div class="options-grid" id="q-options"></div>
+                </div>
+                <div id="feedback"></div>
+                <button class="next-btn" id="btn-next" onclick="generateQuestion()">Question Suivante ➔</button>
+            </div>
+            
+            <div id="summary" style="display:none;">
+                <h2>Compte-rendu final</h2>
+                <div id="report-content"></div>
+                <button onclick="location.reload()" class="btn-opt" style="width:100%; margin-top:20px;">Relancer l'entraînement</button>
+            </div>
+        </div>
+
+        <div class="scratchpad-section">
+            <h2>Brouillon</h2>
+            <canvas id="canvas-scratch" width="280" height="400"></canvas>
+            <div class="scratch-tools">⚠ Pas de gomme (comme à l'examen). Écrivez lisiblement.</div>
+            <button onclick="clearCanvas()" style="margin-top:10px; font-size: 10px;">Vider la page (Nouveau brouillon)</button>
+        </div>
+    </div>
+
+<script>
+    // --- LOGIQUE DU QUIZ ---
+    const questions = [
+        { type: 'temp', q: "Il fait 15°C au sol (0 ft). Quelle est la température à 5000 ft ?", a: 5, opts: [5, 10, 0, -5], desc: "Calcul : 15 - (5 * 2) = 5°C" },
+        { type: 'temp', q: "À 2000 ft, il fait 10°C. Quelle est la température à 8000 ft ?", a: -2, opts: [-2, 2, 0, -5], desc: "Calcul : Écart de 6000ft = -12°C. 10 - 12 = -2°C" },
+        { type: 'press', q: "Convertir 1013 hPa en Pascals (Pa).", a: "101 300 Pa", opts: ["101 300 Pa", "10 130 Pa", "1 013 000 Pa", "101.3 Pa"], desc: "1 hPa = 100 Pa." },
+        { type: 'press', q: "Un capteur indique 98 000 Pa. Combien cela fait-il en hPa ?", a: "980 hPa", opts: ["980 hPa", "9800 hPa", "98 hPa", "9.8 hPa"], desc: "On divise par 100." },
+        { type: 'temp', q: "Altitude : 10 000 ft. Température au sol : 20°C. T° actuelle ?", a: 0, opts: [0, -10, 5, -20], desc: "Perte de 20°C (10 * 2). 20 - 20 = 0°C." }
+    ];
+
+    let currentIdx = 0;
+    let history = [];
+
+    function generateQuestion() {
+        if(currentIdx >= questions.length) {
+            showFinalReport();
+            return;
+        }
+        
+        const q = questions[currentIdx];
+        document.getElementById('btn-next').style.display = 'none';
+        document.getElementById('feedback').innerText = '';
+        document.getElementById('q-text').innerText = q.q;
+        
+        const optContainer = document.getElementById('q-options');
+        optContainer.innerHTML = '';
+        
+        q.opts.sort(() => Math.random() - 0.5).forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-opt';
+            btn.innerText = o;
+            btn.onclick = () => checkAnswer(o, q.a, btn);
+            optContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(guess, correct, btn) {
+        const allBtns = document.querySelectorAll('.btn-opt');
+        allBtns.forEach(b => b.disabled = true);
+        
+        const isCorrect = guess === correct;
+        history.push({ q: questions[currentIdx].q, guess, correct, isCorrect, desc: questions[currentIdx].desc });
+
+        if(isCorrect) {
+            btn.classList.add('correct');
+            document.getElementById('feedback').innerHTML = "<span style='color:green'>AFFIRMATIF.</span> " + questions[currentIdx].desc;
+        } else {
+            btn.classList.add('wrong');
+            document.getElementById('feedback').innerHTML = "<span style='color:red'>NÉGATIF.</span> La réponse était " + correct;
+        }
+        
+        document.getElementById('btn-next').style.display = 'block';
+        currentIdx++;
+    }
+
+    function showFinalReport() {
+        document.getElementById('quiz-engine').style.display = 'none';
+        const summary = document.getElementById('summary');
+        summary.style.display = 'block';
+        const content = document.getElementById('report-content');
+        
+        history.forEach(item => {
+            content.innerHTML += `
+                <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                    <strong>${item.q}</strong><br>
+                    Réponse : ${item.guess} ${item.isCorrect ? '✅' : '❌ (Attendu: '+item.correct+')'}<br>
+                    <small style="color:#666">${item.desc}</small>
+                </div>`;
+        });
+    }
+
+    // --- LOGIQUE DU BROUILLON (CANVAS) ---
+    const canvas = document.getElementById('canvas-scratch');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e.touches[0]); });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e.touches[0]); });
+
+    function startDraw(e) {
+        drawing = true;
+        ctx.beginPath();
+        const rect = canvas.getBoundingClientRect();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    function draw(e) {
+        if(!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    function stopDraw() { drawing = false; }
+    function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+    generateQuestion();
+</script>
+
+</body>
+</html>
