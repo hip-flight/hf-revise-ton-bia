@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HF Training Center</title>
+    <style>
+        :root {
+            --af-blue: #00235e;
+            --af-red: #ed1c24;
+            --af-white: #ffffff;
+            --af-grey: #f4f7f9;
+            --af-shadow: 0 10px 30px rgba(0, 35, 94, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--af-grey);
+            color: var(--af-blue);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; min-height: 100vh;
+        }
+
+        /* --- HEADER --- */
+        header {
+            background: var(--af-white);
+            border-top: 6px solid var(--af-red);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 15px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .logo-img { height: 45px; width: auto; display: block; }
+
+        .nav-tabs { display: flex; gap: 20px; }
+        .nav-btn {
+            background: transparent; border: none; font-size: 1rem; font-weight: 600;
+            color: var(--af-blue); cursor: pointer; padding: 10px 15px;
+            border-radius: 4px; transition: 0.3s; opacity: 0.6;
+        }
+        .nav-btn.active { background: rgba(0, 35, 94, 0.05); opacity: 1; border-bottom: 3px solid var(--af-red); }
+
+        /* --- PROGRESS BAR --- */
+        .progress-section {
+            width: 100%; max-width: 800px; margin: 30px auto 10px; padding: 0 20px; box-sizing: border-box;
+        }
+        .progress-labels { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: bold; margin-bottom: 8px; }
+        .progress-track {
+            width: 100%; height: 10px; background: #e0e0e0; border-radius: 10px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: var(--af-red); width: 0%; 
+            transition: width 1s ease-in-out;
+        }
+
+        /* --- SEARCH --- */
+        .search-container { margin: 20px auto; width: 100%; max-width: 600px; position: relative; }
+        .search-input {
+            width: 100%; padding: 15px 20px 15px 50px; border: 2px solid transparent;
+            border-radius: 50px; font-size: 1.1rem; box-shadow: var(--af-shadow);
+            outline: none; transition: 0.3s; box-sizing: border-box;
+        }
+        .search-input:focus { border-color: var(--af-blue); }
+        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 1.2rem; }
+
+        /* --- GRID --- */
+        .container {
+            max-width: 1200px; width: 100%; margin: 0 auto; padding: 20px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px; flex-grow: 1;
+        }
+
+        .card {
+            background: var(--af-white); border-radius: 12px; padding: 30px 20px;
+            text-align: center; box-shadow: var(--af-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative; display: flex; flex-direction: column;
+            justify-content: space-between; overflow: hidden; border: 1px solid rgba(0,0,0,0.03);
+        }
+        .card:hover { transform: translateY(-8px); box-shadow: 0 15px 40px rgba(0, 35, 94, 0.15); border-color: var(--af-blue); }
+
+        .completed-badge {
+            position: absolute; top: 15px; right: 15px; background: #27ae60; color: white;
+            font-size: 0.7rem; font-weight: bold; padding: 5px 10px; border-radius: 20px;
+            display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card.is-completed .completed-badge { display: block; }
+
+        .emoji-3d { font-size: 4rem; margin-bottom: 15px; display: block; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.1)); transition: transform 0.3s; }
+        .card:hover .emoji-3d { transform: scale(1.1) rotate(5deg); }
+
+        .card-type { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #8898aa; margin-bottom: 5px; font-weight: 700; }
+        .card-title { font-size: 1.2rem; font-weight: 700; color: var(--af-blue); margin: 0 0 20px 0; line-height: 1.4; }
+
+        .btn-access {
+            background: var(--af-blue); color: white; border: none; padding: 12px 0;
+            width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; font-size: 0.9rem; transition: background 0.2s; margin-top: auto;
+        }
+        .btn-access:hover { background: #003380; }
+        .btn-access.exercise { background: white; border: 2px solid var(--af-blue); color: var(--af-blue); }
+        .btn-access.exercise:hover { background: var(--af-blue); color: white; }
+
+        /* --- POPUP SUGGESTION (TOAST) --- */
+        .toast-notification {
+            position: fixed; top: 90px; right: -400px; /* Caché au début */
+            background: white; width: 320px; border-left: 5px solid var(--af-red);
+            padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 8px 0 0 8px; z-index: 900;
+            transition: right 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .toast-notification.show { right: 0; }
+        
+        .toast-header { font-size: 0.85rem; text-transform: uppercase; color: #888; font-weight: bold; display: flex; justify-content: space-between; }
+        .toast-close { cursor: pointer; font-size: 1.2rem; line-height: 0.5; color: #aaa; }
+        .toast-title { font-size: 1.1rem; color: var(--af-blue); font-weight: bold; margin: 0; }
+        .toast-btn { 
+            background: var(--af-blue); color: white; border: none; padding: 8px; 
+            border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 5px; 
+        }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 35, 94, 0.8); backdrop-filter: blur(5px);
+            z-index: 1000; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .modal-content {
+            background: white; width: 95%; height: 90%; border-radius: 8px;
+            position: relative; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 10px 20px; background: var(--af-blue); color: white;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .close-btn {
+            background: var(--af-red); color: white; border: none; padding: 8px 15px;
+            border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase;
+        }
+        .close-btn:hover { background: #c0392b; }
+
+        iframe { width: 100%; height: 100%; border: none; background: #f4f7f9; }
+        .empty-message { grid-column: 1 / -1; text-align: center; padding: 40px; color: #8898aa; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="hftraining.png" alt="HF Training" class="logo-img" onerror="this.style.display='none'; this.parentElement.innerHTML+='<span class=\'logo\'>HF TRAINING</span>'">
+        
+        <div class="nav-tabs">
+            <button class="nav-btn active" onclick="switchTab('all')">Tous les modules</button>
+            <button class="nav-btn" onclick="switchTab('library')">Ma Bibliothèque</button>
+        </div>
+    </header>
+
+    <div class="progress-section">
+        <div class="progress-labels">
+            <span>Progression globale</span>
+            <span id="progress-text">0%</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="searchBar" placeholder="Rechercher un cours, un exercice..." onkeyup="filterContent()">
+    </div>
+
+    <div class="container" id="contentGrid">
+        <div class="empty-message">Chargement des données...</div>
+    </div>
+
+    <div id="toast" class="toast-notification">
+        <div class="toast-header">
+            <span>💡 Suggestion du jour</span>
+            <span class="toast-close" onclick="closeToast()">×</span>
+        </div>
+        <h4 class="toast-title" id="toast-course-title">Titre du module</h4>
+        <div style="font-size: 0.9rem; color: #666;" id="toast-course-type">Type</div>
+        <button class="toast-btn" id="toast-action-btn">Lancer maintenant</button>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modal-title">Module</span>
+                <button class="close-btn" onclick="closeModal()">Fermer & Valider</button>
+            </div>
+            <iframe id="modal-frame" src=""></iframe>
+        </div>
+    </div>
+
+<script>
+    let allModules = [];
+    let currentTab = 'all'; 
+    let activeModuleId = null;
+
+    // --- CHARGEMENT ---
+    function init() {
+        const timestamp = new Date().getTime();
+        fetch('data.csv?v=' + timestamp)
+            .then(response => {
+                if (!response.ok) throw new Error("HTTP error " + response.status);
+                return response.text();
+            })
+            .then(csvText => {
+                parseCSV(csvText);
+                renderGrid();
+                updateStats(); // Mise à jour de la barre
+                triggerRandomSuggestion(); // Lancer la suggestion
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                document.getElementById('contentGrid').innerHTML = `<div class="empty-message">Impossible de charger 'data.csv'.</div>`;
+            });
+    }
+
+    function parseCSV(csvText) {
+        const lines = csvText.split('\n').filter(line => line.trim() !== '');
+        allModules = lines.map(line => {
+            const parts = line.split(',');
+            if(parts.length >= 4) {
+                return { 
+                    id: parts[0].trim(), 
+                    title: parts[1].trim(), 
+                    type: parts[2].trim(), 
+                    url: parts[3].trim() 
+                };
+            }
+            return null;
+        }).filter(item => item !== null);
+    }
+
+    // --- CACHE & STATS ---
+    function getCompletedModules() {
+        const stored = localStorage.getItem('bia_completed');
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    function markAsCompleted(id) {
+        let completed = getCompletedModules();
+        if (!completed.includes(id)) {
+            completed.push(id);
+            localStorage.setItem('bia_completed', JSON.stringify(completed));
+        }
+        updateStats();
+    }
+
+    function updateStats() {
+        const completedCount = getCompletedModules().length;
+        const totalCount = allModules.length;
+        
+        let percentage = 0;
+        if (totalCount > 0) {
+            percentage = Math.round((completedCount / totalCount) * 100);
+        }
+
+        document.getElementById('progress-bar').style.width = percentage + '%';
+        document.getElementById('progress-text').innerText = percentage + '% (' + completedCount + '/' + totalCount + ')';
+    }
+
+    // --- SUGGESTION ALÉATOIRE ---
+    function triggerRandomSuggestion() {
+        const completed = getCompletedModules();
+        // On cherche seulement ce qui n'est PAS fini
+        const todo = allModules.filter(m => !completed.includes(m.id));
+
+        if (todo.length > 0) {
+            // Choix aléatoire
+            const randomModule = todo[Math.floor(Math.random() * todo.length)];
+            
+            // Remplissage du Toast
+            document.getElementById('toast-course-title').innerText = randomModule.title;
+            document.getElementById('toast-course-type').innerText = randomModule.type === 'cours' ? 'Cours Théorique' : 'Exercice Pratique';
+            
+            // Action du bouton
+            const btn = document.getElementById('toast-action-btn');
+            btn.onclick = function() {
+                openModal(randomModule.id, randomModule.url, randomModule.title);
+                closeToast();
+            };
+
+            // Affichage avec un petit délai pour l'effet "Pop"
+            setTimeout(() => {
+                document.getElementById('toast').classList.add('show');
+            }, 1500);
+        }
+    }
+
+    function closeToast() {
+        document.getElementById('toast').classList.remove('show');
+    }
+
+    // --- RENDU GRILLE ---
+    function renderGrid() {
+        const grid = document.getElementById('contentGrid');
+        const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+        const completedIds = getCompletedModules();
+
+        grid.innerHTML = ''; 
+
+        let filteredModules = allModules.filter(module => {
+            const matchesSearch = module.title.toLowerCase().includes(searchTerm);
+            if (currentTab === 'library') {
+                return matchesSearch && completedIds.includes(module.id);
+            }
+            return matchesSearch;
+        });
+
+        if (filteredModules.length === 0) {
+            grid.innerHTML = `<div class="empty-message">Aucun module trouvé.</div>`;
+            return;
+        }
+
+        filteredModules.forEach(module => {
+            const isCompleted = completedIds.includes(module.id);
+            const isCourse = module.type === 'cours';
+            const emoji = isCourse ? '📘' : '🎯'; 
+            const typeLabel = isCourse ? 'Cours Théorique' : 'Exercice Pratique';
+            const btnClass = isCourse ? 'btn-access' : 'btn-access exercise';
+
+            const card = document.createElement('div');
+            card.className = `card ${isCompleted ? 'is-completed' : ''}`;
+            card.innerHTML = `
+                <div class="completed-badge">✓ TERMINÉ</div>
+                <div class="card-type">${typeLabel}</div>
+                <span class="emoji-3d">${emoji}</span>
+                <h3 class="card-title">${module.title}</h3>
+                <button class="${btnClass}" onclick="openModal('${module.id}', '${module.url}', '${module.title.replace(/'/g, "\\'")}')">
+                    ${isCompleted ? 'Revoir' : 'Accéder'}
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function filterContent() { renderGrid(); }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        renderGrid();
+    }
+
+    // --- MODALE ---
+    function openModal(id, url, title) {
+        activeModuleId = id;
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-frame').src = url; 
+        document.getElementById('modal').classList.add('active');
+        document.body.style.overflow = 'hidden'; 
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('active');
+        setTimeout(() => { document.getElementById('modal-frame').src = ''; }, 300);
+        document.body.style.overflow = 'auto';
+
+        if (activeModuleId) {
+            markAsCompleted(activeModuleId); // Sauvegarde et met à jour la barre
+            activeModuleId = null;
+            renderGrid(); 
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>

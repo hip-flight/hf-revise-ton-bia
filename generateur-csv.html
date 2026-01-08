@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Générateur de data.csv - HF Training</title>
+    <style>
+        :root {
+            --af-blue: #00235e;
+            --af-red: #ed1c24;
+            --af-white: #ffffff;
+            --af-grey: #f4f7f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--af-grey);
+            color: var(--af-blue);
+            padding: 40px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .container {
+            background: white; padding: 30px; border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 100%; max-width: 800px;
+            border-top: 6px solid var(--af-red);
+        }
+
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        
+        input, select {
+            padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;
+        }
+
+        .btn-add {
+            background: var(--af-blue); color: white; border: none;
+            padding: 12px; border-radius: 4px; cursor: pointer;
+            font-weight: bold; text-transform: uppercase; width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-add:hover { background: #003380; }
+
+        .output-section { margin-top: 30px; }
+        
+        textarea {
+            width: 100%; height: 200px; margin-top: 10px;
+            font-family: monospace; padding: 10px; border: 2px solid #ddd;
+            background: #f9f9f9; box-sizing: border-box;
+        }
+
+        .table-preview {
+            width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem;
+        }
+        .table-preview th, .table-preview td {
+            border: 1px solid #ddd; padding: 8px; text-align: left;
+        }
+        .table-preview th { background: #f0f0f0; }
+
+        .btn-copy {
+            background: var(--af-red); color: white; border: none;
+            padding: 10px 20px; border-radius: 4px; cursor: pointer;
+            font-weight: bold; margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🛠️ Générateur de data.csv</h1>
+        <p>Remplissez les champs pour ajouter un module à votre liste.</p>
+
+        <div id="form">
+            <div class="form-group">
+                <label>ID (Unique)</label>
+                <input type="number" id="inp-id" placeholder="Ex: 1">
+            </div>
+            <div class="form-group">
+                <label>Titre du cours / exercice</label>
+                <input type="text" id="inp-title" placeholder="Ex: Histoire de l'Aviation">
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="inp-type">
+                    <option value="cours">Cours Théorique</option>
+                    <option value="exercice">Exercice Pratique</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>URL du lien (Lien complet)</label>
+                <input type="text" id="inp-url" placeholder="https://...">
+            </div>
+            <button class="btn-add" onclick="addItem()">Ajouter à la liste</button>
+        </div>
+
+        <div class="output-section">
+            <h3>Aperçu de la liste</h3>
+            <table class="table-preview" id="previewTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Titre</th>
+                        <th>Type</th>
+                        <th>URL</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3>Code CSV à copier</h3>
+            <textarea id="csvOutput" readonly></textarea>
+            <button class="btn-copy" onclick="copyCSV()">Copier le code CSV</button>
+        </div>
+    </div>
+
+<script>
+    let modules = [];
+
+    function addItem() {
+        const id = document.getElementById('inp-id').value;
+        const title = document.getElementById('inp-title').value;
+        const type = document.getElementById('inp-type').value;
+        const url = document.getElementById('inp-url').value;
+
+        if(!id || !title || !url) {
+            alert("Veuillez remplir tous les champs !");
+            return;
+        }
+
+        // Vérification si l'ID existe déjà
+        if(modules.some(m => m.id === id)) {
+            alert("Cet ID existe déjà !");
+            return;
+        }
+
+        modules.push({ id, title, type, url });
+        
+        // Reset des champs (sauf ID qu'on incrémente)
+        document.getElementById('inp-id').value = parseInt(id) + 1;
+        document.getElementById('inp-title').value = "";
+        document.getElementById('inp-url').value = "";
+
+        updateUI();
+    }
+
+    function deleteItem(index) {
+        modules.splice(index, 1);
+        updateUI();
+    }
+
+    function updateUI() {
+        const tbody = document.querySelector('#previewTable tbody');
+        const textarea = document.getElementById('csvOutput');
+        
+        tbody.innerHTML = "";
+        let csvText = "";
+
+        modules.forEach((m, index) => {
+            // Mise à jour du tableau
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${m.id}</td>
+                <td>${m.title}</td>
+                <td>${m.type}</td>
+                <td><small>${m.url}</small></td>
+                <td><button onclick="deleteItem(${index})" style="color:red; cursor:pointer;">X</button></td>
+            `;
+            tbody.appendChild(tr);
+
+            // Mise à jour du texte CSV
+            // On nettoie le titre des virgules éventuelles pour ne pas casser le CSV
+            const cleanTitle = m.title.replace(/,/g, " ");
+            csvText += `${m.id},${cleanTitle},${m.type},${m.url}\n`;
+        });
+
+        textarea.value = csvText.trim();
+    }
+
+    function copyCSV() {
+        const textarea = document.getElementById('csvOutput');
+        textarea.select();
+        document.execCommand('copy');
+        alert("Code CSV copié ! Collez-le maintenant dans votre fichier data.csv");
+    }
+</script>
+
+</body>
+</html>
