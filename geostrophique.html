@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Vent Géostrophique Réaliste</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; flex-direction: column; align-items: center; }
+        .container { display: flex; gap: 30px; margin-top: 30px; }
+        
+        .zone {
+            width: 400px;
+            height: 300px;
+            background: white;
+            border: 2px solid #bdc3c7;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Lignes de pression (Isobares) */
+        .isobare {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: #d6eaf8;
+            border-bottom: 1px solid #3498db;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            font-size: 11px;
+            color: #2980b9;
+        }
+
+        /* Particule d'air (Le nuage / la particule) */
+        .particule {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #e74c3c;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        /* Animation Réaliste : Accélération + Courbe de Coriolis */
+        @keyframes geostrophique-flow {
+            0% { 
+                top: 50px; left: -20px; 
+                animation-timing-function: ease-in; 
+            }
+            /* La particule "tombe" vers la basse pression (le bas) */
+            30% { 
+                top: 120px; left: 80px; 
+                animation-timing-function: ease-out;
+            }
+            /* Coriolis la force à tourner vers la droite */
+            60% { 
+                top: 150px; left: 200px; 
+            }
+            /* Équilibre atteint : elle file droit à l'horizontale */
+            100% { 
+                top: 150px; left: 450px; 
+            }
+        }
+
+        .anim { animation: geostrophique-flow 4s infinite linear; }
+
+        /* Configuration des lignes */
+        .isobare:nth-child(1) { top: 50px; }
+        .isobare:nth-child(2) { top: 100px; }
+        .isobare:nth-child(3) { top: 150px; }
+        .isobare:nth-child(4) { top: 200px; }
+        .isobare:nth-child(5) { top: 250px; }
+
+        .desc { max-width: 600px; margin-top: 20px; line-height: 1.6; color: #34495e; }
+    </style>
+</head>
+<body>
+
+    <h2>Ajustement du Vent Géostrophique</h2>
+
+    <div class="zone">
+        <div class="isobare">1020 hPa (Hautes Pressions)</div>
+        <div class="isobare">1015 hPa</div>
+        <div class="isobare">1010 hPa</div>
+        <div class="isobare">1005 hPa</div>
+        <div class="isobare">1000 hPa (Basses Pressions)</div>
+        
+        <div class="particule anim"></div>
+    </div>
+
+    <div class="desc">
+        <p><b>Pourquoi cette trajectoire ?</b></p>
+        <ol>
+            <li><b>L'appel du vide :</b> Au début, l'air est attiré vers le bas (les 1000 hPa). C'est la <i>Force de Pression</i>.</li>
+            <li><b>Le virage :</b> Plus l'air va vite, plus la <i>Force de Coriolis</i> le tire vers la droite.</li>
+            <li><b>L'horizontale :</b> Quand la particule finit par aller tout droit, c'est que la force qui la tire vers le bas est <b>exactement compensée</b> par celle qui la tire vers le haut.</li>
+        </ol>
+    </div>
+
+</body>
+</html>
