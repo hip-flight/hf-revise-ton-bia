@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cours Météo : Le Front Occlus</title>
+    <style>
+        :root {
+            --cold-blue: #0077be;
+            --warm-red: #cc0000;
+            --occluded-purple: #00235E;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f7f6; }
+        header { background: var(--occluded-purple); color: white; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 30px; }
+        h2 { color: var(--occluded-purple); border-bottom: 2px solid var(--occluded-purple); padding-bottom: 5px; }
+        .info-box { background: white; padding: 20px; border-left: 5px solid var(--occluded-purple); border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .diagram-placeholder { background: #e0e0e0; border: 2px dashed #999; padding: 40px; text-align: center; margin: 20px 0; font-style: italic; }
+        .symbol-box { display: flex; align-items: center; gap: 15px; font-weight: bold; font-size: 1.2em; color: var(--occluded-purple); }
+        .highlight { font-weight: bold; color: var(--occluded-purple); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Le Front Occlus</h1>
+    <p>Comprendre la fin de vie d'une perturbation</p>
+</header>
+
+<section>
+    <h2>1. Définition</h2>
+    <div class="info-box">
+        Un <strong>front occlus</strong> (ou occlusion) se forme lorsqu'un front froid, plus rapide, rattrape un front chaud. Le secteur chaud est alors rejeté en altitude, et les deux masses d'air froid (celle à l'avant et celle à l'arrière) entrent en contact.
+    </div>
+</section>
+
+<section>
+    <h2>2. Représentation Symbolique</h2>
+    <p>Sur une carte isobare, le front occlus est représenté par une ligne violette alternant des triangles et des demi-cercles pointant dans la direction du mouvement.</p>
+    <div class="symbol-box">
+        <span>Symbole : ———▲—●—▲—●———</span>
+    </div>
+</section>
+
+<section>
+    <h2>3. Processus de formation</h2>
+    <p>Le cycle de vie d'une dépression suit généralement ces étapes :</p>
+    <ul>
+        <li><strong>Stade initial :</strong> Séparation entre air froid et air chaud.</li>
+        <li><strong>Maturation :</strong> Le front froid commence à poursuivre le front chaud.</li>
+        <li><strong>Occlusion :</strong> La jonction s'opère. L'air chaud est "pincé" et soulevé.</li>
+    </ul>
+</section>
+
+<section>
+    <h2>4. Conséquences Météorologiques</h2>
+    <table>
+        <tr>
+            <th>Phénomène</th>
+            <th>Observations</th>
+        </tr>
+        <tr>
+            <td><strong>Nuages</strong></td>
+            <td>Mélange de cumulo-nimbus et d'altostratus (souvent un ciel très bouché).</td>
+        </tr>
+        <tr>
+            <td><strong>Précipitations</strong></td>
+            <td>Pluies continues ou averses, parfois fortes près du point d'occlusion.</td>
+        </tr>
+        <tr>
+            <td><strong>Vent</strong></td>
+            <td>Rotation brusque du vent lors du passage du front.</td>
+        </tr>
+    </table>
+</section>
+
+<footer>
+    <hr>
+    <p><em>Note : Il existe deux types d'occlusions selon la température des masses d'air froid : l'occlusion à caractère de front froid et l'occlusion à caractère de front chaud.</em></p>
+</footer>
+
+</body>
+</html>
