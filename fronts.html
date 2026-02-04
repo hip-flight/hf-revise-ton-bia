@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice : Identifier les Fronts Météo</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; width: 100%; margin-top: 20px; }
+        .front-item { display: flex; align-items: center; margin-bottom: 20px; padding: 10px; border: 1px solid #eee; border-radius: 8px; }
+        
+        /* Dessins des fronts en CSS */
+        .symbol { width: 100px; height: 30px; margin-right: 20px; position: relative; border-bottom: 2px solid black; }
+        
+        /* Front Froid : Triangles bleus */
+        .front-froid { border-color: blue; }
+        .front-froid::after {
+            content: ''; position: absolute; bottom: 0; left: 20px;
+            border-left: 8px solid transparent; border-right: 8px solid transparent;
+            border-bottom: 12px solid blue;
+        }
+
+        /* Front Chaud : Demi-cercles rouges */
+        .front-chaud { border-color: red; }
+        .front-chaud::after {
+            content: ''; position: absolute; bottom: -2px; left: 20px;
+            width: 16px; height: 8px; background: red;
+            border-radius: 10px 10px 0 0;
+        }
+
+        /* Front Occlus : Alternance violette */
+        .front-occlus { border-color: purple; }
+        .front-occlus::after {
+            content: '▲●'; position: absolute; bottom: -5px; left: 10px;
+            color: purple; font-size: 18px; letter-spacing: 2px;
+        }
+
+        select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        button { margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #resultat { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h2>Identifier les Fronts sur une Carte Isobare</h2>
+    <p>Sélectionnez le type de front correspondant au symbole :</p>
+
+    <div class="container">
+        <div class="front-item">
+            <div class="symbol front-chaud"></div>
+            <select class="reponse" data-correct="chaud">
+                <option value="">Choisir...</option>
+                <option value="froid">Front Froid</option>
+                <option value="chaud">Front Chaud</option>
+                <option value="occlus">Front Occlus</option>
+            </select>
+        </div>
+
+        <div class="front-item">
+            <div class="symbol front-froid"></div>
+            <select class="reponse" data-correct="froid">
+                <option value="">Choisir...</option>
+                <option value="froid">Front Froid</option>
+                <option value="chaud">Front Chaud</option>
+                <option value="occlus">Front Occlus</option>
+            </select>
+        </div>
+
+        <div class="front-item">
+            <div class="symbol front-occlus"></div>
+            <select class="reponse" data-correct="occlus">
+                <option value="">Choisir...</option>
+                <option value="froid">Front Froid</option>
+                <option value="chaud">Front Chaud</option>
+                <option value="occlus">Front Occlus</option>
+            </select>
+        </div>
+
+        <button onclick="verifierReponses()">Vérifier mes réponses</button>
+        <div id="resultat"></div>
+    </div>
+
+    <script>
+        function verifierReponses() {
+            const selects = document.querySelectorAll('.reponse');
+            let score = 0;
+            
+            selects.forEach(select => {
+                if (select.value === select.getAttribute('data-correct')) {
+                    select.style.borderColor = "green";
+                    score++;
+                } else {
+                    select.style.borderColor = "red";
+                }
+            });
+
+            const resDiv = document.getElementById('resultat');
+            resDiv.innerHTML = `Score : ${score} / ${selects.length}`;
+            resDiv.style.color = (score === selects.length) ? "green" : "red";
+        }
+    </script>
+
+</body>
+</html>
