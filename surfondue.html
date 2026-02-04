@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cours Interactif : L'Eau en Surfusion</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; color: #2c3e50; max-width: 900px; margin: 0 auto; padding: 20px; background: #f0f8ff; }
+        header { text-align: center; background: #00235E; color: white; padding: 20px; border-radius: 15px; margin-bottom: 30px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { color: #2980b9; border-bottom: 2px solid #00235E; padding-bottom: 10px; }
+        
+        /* Simulation Styles */
+        #sim-container { text-align: center; padding: 20px; border: 2px dashed #00235E; border-radius: 15px; background: #fff; }
+        #bottle { width: 120px; height: 250px; background: #d1ecf1; border: 3px solid #00235E; border-radius: 10px 10px 30px 30px; margin: 20px auto; position: relative; transition: all 0.5s; cursor: pointer; overflow: hidden; }
+        #water { width: 100%; height: 80%; background: rgba(52, 152, 219, 0.4); position: absolute; bottom: 0; transition: background 0.8s; }
+        .ice-crystal { position: absolute; color: white; font-size: 20px; opacity: 0; transition: opacity 0.5s; }
+        
+        .status { font-weight: bold; font-size: 1.2em; margin: 10px; }
+        .frozen { background: #ecf0f1 !important; }
+        .btn { background: #e67e22; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1em; }
+        .btn:hover { background: #d35400; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>La Surfusion de l'Eau</h1>
+    <p>Quand l'eau refuse de devenir glace...</p>
+</header>
+
+<div class="card">
+    <h2>1. Qu'est-ce que la surfusion ?</h2>
+    <p>Normalement, l'eau pure gèle à **0°C**. Cependant, la surfusion est un état de la matière où un liquide demeure en phase liquide alors que sa température est inférieure à sa température de solidification.</p>
+    <p><strong>Pourquoi ?</strong> Pour que la glace se forme, les molécules d'eau ont besoin d'une "amorce" (une impureté, une poussière ou un choc) pour s'organiser en cristaux. C'est ce qu'on appelle la <strong>nucléation</strong>.</p>
+</div>
+
+<div class="card">
+    <h2>2. Expérience Interactive</h2>
+    <p>Imaginez une bouteille d'eau très pure, refroidie très lentement à <strong>-5°C</strong>. Elle est encore liquide (état instable).</p>
+    
+    <div id="sim-container">
+        <div class="status" id="temp-display">Température : -5°C (Liquide)</div>
+        <div id="bottle" onclick="declencherGel()">
+            <div id="water"></div>
+            <div id="crystals"></div>
+        </div>
+        <p><em>Cliquez sur la bouteille pour simuler un choc ou l'ajout d'un cristal de glace.</em></p>
+        <button class="btn" onclick="resetSim()">Réinitialiser l'expérience</button>
+    </div>
+</div>
+
+<div class="card">
+    <h2>3. Pourquoi le gel est-il instantané ?</h2>
+    <p>Dès que vous perturbez l'eau en surfusion :</p>
+    <ul>
+        <li>Une réaction en chaîne se produit.</li>
+        <li>Les molécules se fixent instantanément autour du point de choc.</li>
+        <li>La température remonte brutalement à **0°C** car la congélation libère de l'énergie (chaleur latente).</li>
+    </ul>
+</div>
+
+<script>
+    let isFrozen = false;
+
+    function declencherGel() {
+        if (isFrozen) return;
+        
+        isFrozen = true;
+        const water = document.getElementById('water');
+        const temp = document.getElementById('temp-display');
+        const bottle = document.getElementById('bottle');
+        
+        // Effet visuel de gel
+        water.style.background = "rgba(255, 255, 255, 0.9)";
+        temp.innerHTML = "Température : 0°C (CONGÉLATION INSTANTANÉE !)";
+        temp.style.color = "#e74c3c";
+        bottle.style.borderColor = "#bdc3c7";
+        
+        // Ajout de petits flocons visuels
+        const crystals = document.getElementById('crystals');
+        for(let i=0; i<10; i++) {
+            let spark = document.createElement('span');
+            spark.innerHTML = "❄";
+            spark.className = "ice-crystal";
+            spark.style.left = Math.random() * 80 + "px";
+            spark.style.top = Math.random() * 200 + "px";
+            spark.style.opacity = "1";
+            crystals.appendChild(spark);
+        }
+    }
+
+    function resetSim() {
+        isFrozen = false;
+        const water = document.getElementById('water');
+        const temp = document.getElementById('temp-display');
+        const bottle = document.getElementById('bottle');
+        const crystals = document.getElementById('crystals');
+        
+        water.style.background = "rgba(52, 152, 219, 0.4)";
+        temp.innerHTML = "Température : -5°C (Liquide)";
+        temp.style.color = "#2c3e50";
+        bottle.style.borderColor = "#3498db";
+        crystals.innerHTML = "";
+    }
+</script>
+
+</body>
+</html>
