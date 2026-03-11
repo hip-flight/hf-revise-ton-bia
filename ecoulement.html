@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulateur d'Écoulement - Éditeur de Profil</title>
+    <style>
+        body { margin: 0; background: #0a0a0a; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        canvas { cursor: crosshair; background: #111; display: block; }
+        #toolbar { background: #222; padding: 15px; display: flex; gap: 20px; align-items: center; border-bottom: 1px solid #333; }
+        .hint { font-size: 0.8em; color: #888; }
+        button { background: #00d4ff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #008fb3; }
+        .stats { font-family: monospace; color: #00ff00; }
+    </style>
+</head>
+<body>
+
+<div id="toolbar">
+    <button onclick="resetPath()">Effacer le profil</button>
+    <div class="hint"><b>Clic gauche</b> : Placer un point | <b>Les points créent une courbe fluide</b></div>
+    <div class="stats">Atomes : <span id="atom-count">0</span></div>
+</div>
+
+<canvas id="simCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const atomCountEl = document.getElementById('atom-count');
+
+    let points = [];
+    let particles = [];
+    let path = new Path2D();
+
+    // Configuration
+    const PARTICLE_COUNT = 150;
+    const SPEED = 4;
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 60;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // --- LOGIQUE DU PROFIL (STYLE PLUME/BÉZIER) ---
+    canvas.addEventListener('mousedown', (e) => {
+        points.push({ x: e.clientX, y: e.clientY - 60 });
+        updatePath();
+    });
+
+    function updatePath() {
+        if (points.length < 2) return;
+        path = new Path2D();
+        path.moveTo(points[0].x, points[0].y);
+
+        if (points.length === 2) {
+            path.lineTo(points[1].x, points[1].y);
+        } else {
+            // Courbe spline simple pour l'arrondi
+            for (let i = 1; i < points.length - 2; i++) {
+                const xc = (points[i].x + points[i + 1].x) / 2;
+                const yc = (points[i].y + points[i + 1].y) / 2;
+                path.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+            }
+            // Pour les deux derniers points
+            path.quadraticCurveTo(
+                points[points.length - 2].x, 
+                points[points.length - 2].y, 
+                points[points.length - 1].x, 
+                points[points.length - 1].y
+            );
+        }
+    }
+
+    function resetPath() {
+        points = [];
+        path = new Path2D();
+    }
+
+    // --- LOGIQUE DES ATOMES (PARTICULES) ---
+    class Particle {
+        constructor() {
+            this.reset();
+        }
+
+        reset() {
+            this.x = -Math.random() * 100;
+            this.y = Math.random() * canvas.height;
+            this.vx = SPEED + Math.random();
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.history = [];
+        }
+
+        update() {
+            let nextX = this.x + this.vx;
+            let nextY = this.y + this.vy;
+
+            // Collision avec le profil créé
+            if (points.length > 1 && ctx.isPointInPath(path, nextX, nextY)) {
+                // Simulation simple de rebond/contournement
+                this.vx *= 0.8; 
+                this.vy = (this.y - points[0].y) * 0.05; // Déviation selon la position
+                nextX = this.x + this.vx;
+                nextY = this.y + this.vy;
+            }
+
+            this.x = nextX;
+            this.y = nextY;
+
+            if (this.x > canvas.width) this.reset();
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 212, 255, 0.6)';
+            ctx.fill();
+        }
+    }
+
+    // Initialisation des particules
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push(new Particle());
+    }
+    atomCountEl.innerText = PARTICLE_COUNT;
+
+    // --- BOUCLE D'ANIMATION ---
+    function animate() {
+        ctx.fillStyle = 'rgba(17, 17, 17, 0.2)'; // Effet de traînée
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Dessiner le profil
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.stroke(path);
+
+        // Dessiner les points d'ancrage
+        ctx.fillStyle = '#ff4444';
+        points.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Mettre à jour et dessiner les atomes
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+
+</body>
+</html>
