@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulateur Aérodynamique Précis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { margin: 0; font-family: sans-serif; background: #121212; color: white; display: flex; height: 100vh; overflow: hidden; }
+        #left-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; padding: 20px; }
+        #right-panel { width: 450px; display: flex; flex-direction: column; gap: 10px; padding: 15px; background: #222; border-left: 2px solid #333; overflow-y: auto; }
+        .chart-container { flex: 1; min-height: 250px; }
+        #wing-svg { width: 300px; height: 150px; margin-bottom: 20px; }
+        .controls { width: 80%; background: #333; padding: 15px; border-radius: 8px; text-align: center; }
+        input[type=range] { width: 100%; }
+        span.val { color: #ffcc00; font-weight: bold; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+<div id="left-panel">
+    <h2>Comportement du Profil</h2>
+    <svg id="wing-svg" viewBox="0 0 200 100">
+        <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#555;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#aaa;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <g stroke="#444" stroke-width="0.5">
+            <line x1="0" y1="20" x2="200" y2="20" />
+            <line x1="0" y1="50" x2="200" y2="50" />
+            <line x1="0" y1="80" x2="200" y2="80" />
+        </g>
+        <path id="airfoil" d="M30,50 Q60,30 150,48 Q170,50 150,52 Q60,70 30,50 Z" fill="url(#grad)" stroke="#fff" />
+    </svg>
+
+    <div class="controls">
+        <label>Incidence ($\alpha$) : <span id="aoa-val" class="val">0</span>°</label>
+        <input type="range" id="aoa-slider" min="-10" max="25" step="0.5" value="0">
+    </div>
+</div>
+
+<div id="right-panel">
+    <div class="chart-container">
+        <canvas id="polarChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="cxChart"></canvas>
+    </div>
+</div>
+
+<script>
+    const slider = document.getElementById('aoa-slider');
+    const aoaVal = document.getElementById('aoa-val');
+    const airfoil = document.getElementById('airfoil');
+
+    // --- PHYSIQUE (Inspirée de vos images) ---
+    function getPhysics(alpha) {
+        const a_rad = alpha * (Math.PI / 180);
+        // Cz : Portance (linéaire puis décrochage)
+        let cz;
+        if (alpha <= 16) {
+            cz = 0.1 * (alpha + 2); // Cz ~ 0.2 à 0°, monte à ~1.6
+        } else {
+            cz = 1.8 * Math.exp(-(alpha - 16) * 0.15); // Décrochage
+        }
+
+        // Cx : Traînée (Parabole centrée sur alpha = 3°)
+        // Formule : Cx = Cx_min + k * (alpha - alpha_cxmin)^2
+        const cx_min = 0.012;
+        const cx = cx_min + 0.00015 * Math.pow(alpha - 3, 2);
+
+        return { alpha, cx, cz };
+    }
+
+    // Données pour les courbes fixes
+    const dataPoints = [];
+    for (let i = -10; i <= 25; i += 0.5) { dataPoints.push(getPhysics(i)); }
+
+    // --- CHART 1 : POLAIRE (Cz / Cx) ---
+    const ctx1 = document.getElementById('polarChart').getContext('2d');
+    const polarChart = new Chart(ctx1, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                { label: 'Polaire', data: dataPoints.map(p => ({x: p.cx, y: p.cz})), showLine: true, borderColor: '#3498db', pointRadius: 0 },
+                { label: 'Actuel', data: [{x: 0, y: 0}], backgroundColor: 'red', pointRadius: 6 }
+            ]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Cx (Traînée)', color: '#eee' }, min: 0, max: 0.1 },
+                y: { title: { display: true, text: 'Cz (Portance)', color: '#eee' }, min: -0.5, max: 2 }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // --- CHART 2 : Cx / Alpha ---
+    const ctx2 = document.getElementById('cxChart').getContext('2d');
+    const cxChart = new Chart(ctx2, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                { label: 'Évolution Cx', data: dataPoints.map(p => ({x: p.alpha, y: p.cx})), showLine: true, borderColor: '#e67e22', pointRadius: 0 },
+                { label: 'Actuel', data: [{x: 0, y: 0}], backgroundColor: 'red', pointRadius: 6 }
+            ]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Alpha (Incidence °)', color: '#eee' }, min: -10, max: 25 },
+                y: { title: { display: true, text: 'Cx', color: '#eee' }, min: 0, max: 0.08 }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // --- LOGIQUE DE MISE À JOUR ---
+    function update() {
+        const alpha = parseFloat(slider.value);
+        aoaVal.innerText = (alpha > 0 ? "+" : "") + alpha;
+
+        // Correction : L'aile s'incline vers le haut pour un angle positif
+        // En SVG, les degrés positifs tournent dans le sens horaire, donc on met un signe moins
+        airfoil.style.transformOrigin = "60px 50px"; 
+        airfoil.style.transform = `rotate(${-alpha}deg)`;
+
+        const current = getPhysics(alpha);
+
+        // Update point Polaire
+        polarChart.data.datasets[1].data = [{x: current.cx, y: current.cz}];
+        polarChart.update('none');
+
+        // Update point Cx
+        cxChart.data.datasets[1].data = [{x: current.alpha, y: current.cx}];
+        cxChart.update('none');
+    }
+
+    slider.addEventListener('input', update);
+    update();
+</script>
+
+</body>
+</html>
